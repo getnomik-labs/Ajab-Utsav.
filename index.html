@@ -1,0 +1,769 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Ajab Utsav</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Rozha+One&display=swap">
+<style>
+/* Layout: a sticky bar, a year-at-a-glance chart, then one full-width scene per festival, in calendar order.
+   Look: festival hoarding. Rozha One headlines on a cool lavender page, so the saffron-and-marigold
+   scenes are the only warm things on it. Each scene brings its own palette. */
+:root {
+  --bg: #f2f0fa; --panel: #ffffff; --ink: #1d1636; --muted: #655d82; --line: #d8d3ec; --soft: #e8e4f6;
+  --pink: #e8266f; --haldi: #f2a900;
+  --f-display: 'Rozha One', 'Georgia', serif;
+  --f-body: 'Hind', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #120e24; --panel: #1b1635; --ink: #f1eefc; --muted: #a9a1c9; --line: #342c58; --soft: #261f45; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #120e24; --panel: #1b1635; --ink: #f1eefc; --muted: #a9a1c9; --line: #342c58; --soft: #261f45; color-scheme: dark; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--f-body); margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding-inline: 20px; }
+
+/* top bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.bar .wrap { display: flex; align-items: center; gap: 14px 20px; flex-wrap: wrap; padding-block: 10px; }
+.brand { font: 400 20px/1 var(--f-display); margin-right: auto; white-space: nowrap; }
+.ctl { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.tog { padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-weight: 500; }
+.tog[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.ctl input[type=range] { width: 96px; accent-color: var(--pink); }
+
+/* intro and year chart */
+.intro { padding-block: 44px 20px; display: grid; gap: 14px; }
+.intro h1 { margin: 0; font: 400 clamp(40px, 8vw, 84px)/.98 var(--f-display); letter-spacing: -.01em; text-wrap: balance; }
+.intro h1 em { font-style: normal; color: var(--pink); }
+.intro p { margin: 0; max-width: 58ch; font-size: 18px; color: var(--muted); }
+.glance { margin-block: 20px 40px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; overflow-x: auto; }
+.glance h2 { margin: 0 0 10px; font: 500 12px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.gtab { display: grid; grid-template-columns: minmax(120px, 1.5fr) repeat(12, minmax(16px, 1fr)); gap: 3px; min-width: 420px; align-items: center; }
+.gtab .mh { font: 500 11px var(--f-mono); text-align: center; color: var(--muted); }
+.gtab .mh.now { color: var(--pink); font-weight: 500; }
+.gtab .nm { padding: 4px 0; background: none; border: 0; text-align: left; font-weight: 500; font-size: 14px; border-radius: 4px; }
+.gtab .nm:hover { color: var(--pink); }
+.gtab .c { height: 20px; border-radius: 3px; background: var(--soft); }
+.gtab .c.on { background: var(--col); }
+.gtab .c.now { box-shadow: 0 0 0 2px var(--pink) inset; }
+.gnote { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+
+/* festival */
+.fest { padding-block: 34px; border-top: 1px solid var(--line); scroll-margin-top: 70px; }
+.fest .grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 28px 40px; align-items: center; }
+.fest:nth-of-type(even) .grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+.fest:nth-of-type(even) .scene { order: 2; }
+.scene { position: relative; border-radius: 4px; overflow: hidden; background: #111; aspect-ratio: 16 / 10; max-width: 100%; box-shadow: 0 14px 34px rgba(24, 12, 60, .22); }
+.scene canvas { display: block; width: 100%; height: 100%; }
+.play { position: absolute; left: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px 8px 12px; border: 0; border-radius: 999px; background: var(--a1); color: var(--a1ink); font-weight: 600; font-size: 14px; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
+.play:hover { filter: brightness(1.08); }
+.play .ic { width: 0; height: 0; border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+.play[aria-pressed="true"] .ic { width: 10px; height: 12px; border: 0; background: linear-gradient(90deg, currentColor 0 38%, transparent 38% 62%, currentColor 62%); }
+.eq { position: absolute; right: 12px; bottom: 12px; display: none; gap: 3px; align-items: flex-end; height: 18px; }
+.fest.live .eq { display: flex; }
+.eq i { width: 4px; background: var(--a1); border-radius: 1px; animation: eq .7s ease-in-out infinite alternate; }
+.eq i:nth-child(2) { animation-delay: -.2s; } .eq i:nth-child(3) { animation-delay: -.45s; } .eq i:nth-child(4) { animation-delay: -.1s; }
+@keyframes eq { from { height: 3px } to { height: 18px } }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.chip { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font: 500 12px var(--f-mono); letter-spacing: .02em; }
+.chip.season { background: var(--a1); color: var(--a1ink); border-color: transparent; }
+.fest h2 { margin: 0; font: 400 clamp(32px, 5vw, 52px)/1.02 var(--f-display); text-wrap: balance; }
+.place { margin: 6px 0 14px; color: var(--muted); font-weight: 500; }
+.fest p { margin: 0 0 12px; max-width: 60ch; }
+.lab { display: block; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--pink); margin-bottom: 2px; }
+.senses { display: grid; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); font-size: 15px; color: var(--muted); }
+.senses b { color: var(--ink); font-weight: 600; }
+.fest.preview .chip.pv { background: var(--pink); color: #fff; border-color: transparent; }
+
+/* real music dock */
+.acts { position: absolute; left: 12px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px; max-width: calc(100% - 60px); }
+.acts .play { position: static; }
+.play.mus { background: var(--panel); color: var(--ink); }
+.play.mus[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+#dock { position: fixed; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 30; width: 232px; padding: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 34px rgba(24, 12, 60, .35); }
+#dock .dh { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font: 500 11px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+#dock .dh span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dock .dh button { border: 0; background: none; font-size: 18px; line-height: 1; padding: 0 4px; }
+.tile { width: 200px; height: 200px; margin: 0 auto; background: #000; position: relative; }
+.tile iframe, .tile #ytDock { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+#dock .dt { margin: 8px 0 2px; font-weight: 600; font-size: 13px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+#dock .db { font-size: 12px; color: var(--muted); min-height: 16px; }
+#dock .dc { display: flex; gap: 6px; margin-top: 8px; }
+#dock .dc button { flex: 1; padding: 6px 0; border: 1px solid var(--line); border-radius: 6px; background: var(--soft); font-size: 13px; font-weight: 600; }
+#dock .dm { margin: 6px 0 0; font-size: 12px; color: var(--pink); }
+.add .form input#fMusic { font-family: var(--f-mono); font-size: 13px; }
+
+/* contribute */
+.add { padding-block: 44px 70px; border-top: 1px solid var(--line); }
+.add h2 { margin: 0 0 8px; font: 400 clamp(30px, 5vw, 46px)/1.05 var(--f-display); }
+.add > .wrap > p { max-width: 62ch; color: var(--muted); margin: 0 0 22px; }
+.addgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+.form { display: grid; gap: 12px; align-content: start; }
+.form label { display: grid; gap: 4px; font-weight: 500; font-size: 14px; }
+.form input, .form select, .form textarea { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+.form textarea { min-height: 84px; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { padding: 9px 18px; border-radius: 999px; border: 0; background: var(--pink); color: #fff; font-weight: 600; }
+.btn.alt { background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
+.code { margin: 0; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; font: 12.5px/1.55 var(--f-mono); overflow: auto; white-space: pre; max-height: 420px; user-select: text; }
+.foot { padding-block: 24px 40px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+@media (max-width: 820px) {
+  .fest .grid, .fest:nth-of-type(even) .grid, .addgrid { grid-template-columns: minmax(0, 1fr); }
+  .fest:nth-of-type(even) .scene { order: 0; }
+  .ctl input[type=range] { width: 70px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .eq i { animation: none; height: 12px; } }
+</style>
+
+</head><body><div class="bar"><div class="wrap">
+  <div class="brand">Ajab Utsav</div>
+  <div class="ctl">
+    <button type="button" class="tog" id="follow" aria-pressed="false" title="Plays the sound of the festival on screen as you scroll">Sound follows scroll</button>
+    <label for="vol">Volume</label><input type="range" id="vol" min="0" max="100" value="75">
+  </div>
+</div></div>
+
+<main>
+<section class="wrap intro">
+  <h1>Eight festivals where India does the <em>unexpected</em></h1>
+  <p>A scroll through the year. Each festival has a small animated scene and a sound you can play, all drawn and synthesised live in your browser. Dates move with the lunar calendar, so check locally before you travel.</p>
+</section>
+
+<section class="wrap">
+  <div class="glance">
+    <h2>The year at a glance</h2>
+    <div class="gtab" id="gtab" role="table" aria-label="Which months each festival falls in"></div>
+    <p class="gnote">Tap a name to jump to it. The pink outline is this month.</p>
+  </div>
+</section>
+
+<div id="list"></div>
+<div id="dock" hidden role="region" aria-label="Real music player">
+  <div class="dh"><span id="dFest">Real music</span><button type="button" id="dClose" aria-label="Close player">×</button></div>
+  <div class="tile"><div id="ytDock"></div></div>
+  <div class="dt" id="dTitle"></div><div class="db" id="dBy"></div>
+  <div class="dc"><button type="button" id="dPrev" aria-label="Previous track">Prev</button><button type="button" id="dPause" aria-label="Pause or play">Pause</button><button type="button" id="dNext" aria-label="Next track">Next</button></div>
+  <p class="dm" id="dMsg" hidden></p>
+</div>
+
+<section class="add" id="add"><div class="wrap">
+  <h2>Know a festival we missed?</h2>
+  <p>Every festival here is one small object in the <code>FESTIVALS</code> list at the top of the script. Fill in the form to see yours appear on this page and copy the code, then add it to the list and open a pull request. Preview entries disappear when you reload.</p>
+  <div class="addgrid">
+    <form class="form" id="form" autocomplete="off">
+      <label for="fName">Festival name<input id="fName" type="text" value="Hemis Festival" required></label>
+      <div class="row2">
+        <label for="fPlace">Place<input id="fPlace" type="text" value="Hemis Monastery"></label>
+        <label for="fState">State<input id="fState" type="text" value="Ladakh"></label>
+      </div>
+      <div class="row2">
+        <label for="fFrom">Starts in<select id="fFrom"></select></label>
+        <label for="fTo">Ends in<select id="fTo"></select></label>
+      </div>
+      <label for="fWhen">When, in words<input id="fWhen" type="text" value="Two days in summer, tied to the lunar calendar"></label>
+      <label for="fWeird">The weird bit<textarea id="fWeird">Monks in huge painted masks and brocade robes dance in a courtyard to cymbals and long horns, acting out the victory of good over evil.</textarea></label>
+      <label for="fHear">What you would hear<input id="fHear" type="text" value="Long horns, cymbals and drums"></label>
+      <label for="fSee">What you would see<input id="fSee" type="text" value="Painted masks turning in a courtyard"></label>
+      <label for="fMusic">YouTube link for the music (optional)<input id="fMusic" type="text" placeholder="https://www.youtube.com/watch?v=..."></label>
+      <div class="row2">
+        <label for="fScene">Scene<select id="fScene"></select></label>
+        <label for="fSound">Sound<select id="fSound"></select></label>
+      </div>
+      <div class="btns"><button class="btn" type="submit">Preview on this page</button><button class="btn alt" type="button" id="copy">Copy code</button></div>
+    </form>
+    <div><span class="lab">Code to add</span><pre class="code" id="code" tabindex="0"></pre></div>
+  </div>
+</div></section>
+</main>
+<div class="wrap foot">Real music plays in YouTube's own player, which stays visible as YouTube requires. Open source, from Getnomik Labs. Festival details are written to be broadly right, not authoritative: dates and customs vary by place and year, and local organisers always know best. Please correct us through a pull request.</div>
+
+<script>
+(() => {
+'use strict';
+/* =====================================================================
+   HOW TO ADD A FESTIVAL
+   Add one object to FESTIVALS below. Fields:
+     id      short unique word
+     name, place, state, when (words), weird (the strange part), hear, see
+     months  [first, last] as 1 to 12, wraps over new year if first > last
+     pal     { bg:[top, bottom], c:[3 or 4 colours] }  colours the scene and the page chips
+     scene   one of the keys in SCENES   (canvas drawing)
+     sound   one of the keys in SOUNDS   (live-synthesised audio)
+     music   optional list of { yt: 'VIDEO_ID', title } for the Real music button. Videos must allow embedding;
+             broken ones are skipped automatically, and the YouTube player always stays visible.
+   A new look needs a new SCENES entry; a new sound needs a new SOUNDS entry.
+   Both are small functions, copy the closest one and change it.
+   ===================================================================== */
+const FESTIVALS = [
+  { id: 'uttarayan', name: 'Uttarayan', place: 'Ahmedabad and all over Gujarat', state: 'Gujarat', months: [1, 1],
+    when: 'Every 14 January, with a bonus day on the 15th',
+    weird: 'An entire state climbs onto its rooftops for one giant kite fight. The point is to cut everyone else\'s string, and the cry when you do it is "Kai po che!" (I cut it). Strings were traditionally coated with ground glass to slice rival lines, which is why many people now choose safer thread that does not hurt birds. The food of the day is undhiyu and chikki.',
+    hear: 'Wind, a distant dhol, strings snapping, a neighbour cheering', see: 'A sky of diamonds, and rooftops just as full',
+    pal: { bg: ['#ffcf6b', '#ff7a45'], c: ['#e8266f', '#2f6bff', '#fff1c7', '#18a37a'] }, scene: 'kites', sound: 'kites',
+    music: [{ yt: 'aAt1Z3iv6ew', title: 'Biggest kite flying' }, { yt: 'eC_JETVP85s', title: 'Uttarayan 2022 in Ahmedabad' }, { yt: 'NoWLUaOyNMs', title: 'Uttarayan 2024 in the Pols of Ahmedabad' }, { yt: 'TDQT5frPOoU', title: 'Uttarayan 2021, Ahmedabad' }] },
+  { id: 'lathmar', name: 'Lathmar Holi', place: 'Barsana and Nandgaon, near Mathura', state: 'Uttar Pradesh', months: [2, 3],
+    when: 'The week before Holi, usually February or March',
+    weird: 'The women hit the men. With sticks. The men of Nandgaon visit Barsana to be playfully beaten by the local women, and they defend themselves with shields while the women sing teasing songs. The next day the visit is repeated the other way round, and the colour powder goes everywhere.',
+    hear: 'Dholak, clapping, teasing songs, soft puffs of powder', see: 'Sticks, shields and clouds of colour',
+    pal: { bg: ['#4a1260', '#b72f7a'], c: ['#ffd23f', '#35d0ba', '#ff5d8f', '#7a5cff'] }, scene: 'colour', sound: 'colour',
+    music: [{ yt: 'StztQpM0xeg', title: 'Holi ke rasiya, one hour of songs' }, { yt: '9W5CsNNZ3oA', title: 'Lathmar Holi in Barsana' }, { yt: 'Bumo9vBXfSA', title: 'Lathmar Holi, Barsana, Mathura' }] },
+  { id: 'pooram', name: 'Thrissur Pooram', place: 'Vadakkunnathan Temple, Thrissur', state: 'Kerala', months: [4, 5],
+    when: 'In the Malayalam month of Medam, usually April or May',
+    weird: 'Around thirty decorated elephants stand in two lines while the men on their backs swap sequined, colourful umbrellas in perfect time, a show called Kudamattam. A huge percussion ensemble builds one rhythm faster and faster until the whole crowd is waving in time. Fireworks come in the small hours.',
+    hear: 'Chenda drums speeding up, cymbals, a long brass horn', see: 'Umbrellas rising and falling over elephants, lit like jewellery',
+    pal: { bg: ['#0a1030', '#2a1a4a'], c: ['#ff3d6e', '#ffc83d', '#2fd0c0', '#8a6bff'] }, scene: 'umbrellas', sound: 'pooram',
+    music: [{ yt: 'elhhRQj9_6o', title: 'Ilanjithara Melam, Thrissur Pooram 2019' }, { yt: 'KgC9yC9MQkw', title: 'Ilanjithara Melam, full video' }, { yt: 'sCDwulDSjdc', title: 'Ilanjithara Melam, 2017' }] },
+  { id: 'boat', name: 'Nehru Trophy Boat Race', place: 'Punnamada Lake, Alappuzha', state: 'Kerala', months: [8, 8],
+    when: 'The second Saturday of August',
+    weird: 'Racing boats around thirty metres long, with sterns curled up like a cobra\'s hood, carry around a hundred rowers and singers each. They have to paddle in perfect unison to a song and a drumbeat. A hundred people moving as one body is the whole sport.',
+    hear: 'Oars hitting water, rowing songs, a crowd on the bank', see: 'Long black boats, a hundred paddles dipping together',
+    pal: { bg: ['#9fe3ff', '#0a5f8a'], c: ['#1b1b2f', '#ff7a1a', '#f2e8c9', '#e8266f'] }, scene: 'boats', sound: 'boats',
+    music: [{ yt: 'owGYD-8XVBE', title: '71st Nehru Trophy Boat Race, 2025' }, { yt: 'OakQW5DxSvU', title: 'Kerala\'s biggest boat race' }] },
+  { id: 'dahihandi', name: 'Dahi Handi', place: 'Mumbai, Thane and across Maharashtra', state: 'Maharashtra', months: [8, 9],
+    when: 'The day after Janmashtami, usually August or September',
+    weird: 'Teams of young people climb onto each other\'s shoulders to build a human tower, several storeys high, to smash a clay pot of curd hung over the street. It re-enacts young Krishna stealing butter. The pot often comes with prize money, and the towers fall down a lot.',
+    hear: 'Dhol and tasha drums, whistles, a loud crash', see: 'A tower of people reaching for a pot',
+    pal: { bg: ['#ff9a3d', '#3b1a5c'], c: ['#ffe14d', '#ff4d6d', '#ffffff', '#2fb0ff'] }, scene: 'pyramid', sound: 'dahi',
+    music: [{ yt: '8BZhAVRWcfQ', title: 'Dahi Handi songs: Govinda Aala Re' }, { yt: '6ebpuubDR_8', title: 'Ala re ala Govinda ala, Marathi' }, { yt: 'ML3oGKwcM_Q', title: 'Dahi Handi, Dadar' }] },
+  { id: 'tarnetar', name: 'Tarnetar Fair', place: 'Tarnetar, Surendranagar district', state: 'Gujarat', months: [8, 9],
+    when: 'Three days in the month of Bhadrapad, usually August or September',
+    weird: 'A rural fair known as a matchmaking gathering. Young men arrive in their best clothes carrying big embroidered umbrellas covered in mirrorwork, because the umbrella is how you get noticed. Folk songs and dances go on late into the night, and these days photographers come too.',
+    hear: 'Dhol, ankle bells, a bamboo flute over a drone', see: 'Mirror-work umbrellas seen from above, turning',
+    pal: { bg: ['#1a1057', '#4a1a7a'], c: ['#ff3d6e', '#ffc83d', '#2fd0c0', '#f5f0ff'] }, scene: 'mandala', sound: 'tarnetar',
+    music: [{ yt: '1M3BEao-7vs', title: 'Tarnetar Fair' }] },
+  { id: 'garba', name: 'Navratri Garba', place: 'All over Gujarat, and wherever Gujaratis live', state: 'Gujarat', months: [9, 10],
+    when: 'Nine nights, usually late September to October',
+    weird: 'Nine nights of dancing in circles around a lamp, from sunset to the small hours, in outfits planned for months. Dancers clap in a three-clap pattern and move as one, and a big ground can hold thousands in rings inside rings. Many dance barefoot.',
+    hear: 'Dholak, three claps, a harmonium drone and a tune', see: 'Rings of dancers turning around a flame',
+    pal: { bg: ['#2a0d4d', '#7a1a5a'], c: ['#ffc83d', '#ff4d8f', '#2fd0c0', '#ff7a2e'] }, scene: 'garba', sound: 'garba',
+    music: [{ yt: 'qJc79CtdusU', title: 'Nonstop raas garba' }, { yt: 'yMBU9QdNpyo', title: 'Nonstop Navratri garba' }, { yt: 'cTnbggVhDPs', title: 'Non-stop raas garba jukebox' }, { yt: 'NBt60JiIUTA', title: 'Khelaiya, nonstop Gujarati garba' }] },
+  { id: 'bastar', name: 'Bastar Dussehra', place: 'Jagdalpur, Bastar', state: 'Chhattisgarh', months: [8, 10],
+    when: 'About 75 days, from the monsoon to around Dussehra',
+    weird: 'Reportedly India\'s longest festival, at around 75 days, and no Ravana is burned. It honours the local goddess Danteshwari, and villagers from the surrounding tribal areas pull huge hand-built wooden chariots through the town.',
+    hear: 'Slow big drums, a temple bell, creaking wood, a murmuring crowd', see: 'A tall wooden chariot moving through mist and lantern light',
+    pal: { bg: ['#0f2a2a', '#3a2a1a'], c: ['#ffb43d', '#d9482b', '#9ad8b0', '#f5e6c0'] }, scene: 'chariot', sound: 'chariot',
+    music: [{ yt: 'EBsaVMWqMSI', title: 'Rath Parikrama, Bastar Dussehra' }, { yt: 'TOyPq7e-FPI', title: 'Bastar Dussehra, Jagdalpur' }, { yt: 'Nqsh5s51bSg', title: 'Bastar Dussehra, 75 days' }] }
+];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/* ---------- small helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+const TAU = Math.PI * 2;
+const hash = (s) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
+const mulberry = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const hex = (h) => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map((c) => c + c).join(''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; };
+const rgba = (h, a) => { const c = hex(h); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; };
+const lum = (h) => { const c = hex(h).map((v) => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+const inkOn = (h) => lum(h) > .35 ? '#1a1030' : '#ffffff';
+const inRange = (m, [a, b]) => a <= b ? (m >= a && m <= b) : (m >= a || m <= b);
+const monthName = (r) => r[0] === r[1] ? MONTHS[r[0] - 1] : MONTHS[r[0] - 1] + ' to ' + MONTHS[r[1] - 1];
+const NOW = new Date().getMonth() + 1;
+const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* ======================== SCENES ======================== */
+const SCENES = {};
+const sky = (g, W, H, p) => { const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, p.bg[0]); gr.addColorStop(1, p.bg[1]); g.fillStyle = gr; g.fillRect(0, 0, W, H); };
+function person(g, x, y, h, col) { g.fillStyle = col; g.beginPath(); g.arc(x, y - h * .82, h * .17, 0, TAU); g.fill(); g.beginPath(); g.moveTo(x - h * .2, y); g.lineTo(x - h * .14, y - h * .62); g.lineTo(x + h * .14, y - h * .62); g.lineTo(x + h * .2, y); g.closePath(); g.fill(); }
+
+SCENES.kites = (S) => {
+  const R = S.rand, P = S.pal, roofs = []; for (let i = 0; i < 24; i++) roofs.push(.1 + R() * .1);
+  const mk = () => ({ x: .06 + R() * .88, y: .12 + R() * .5, s: .05 + R() * .035, c: P.c[Math.floor(R() * P.c.length)], ph: R() * TAU, sp: .5 + R() * .7, ax: .05 + R() * .9, cut: 0 });
+  const ks = []; for (let i = 0; i < 9; i++) ks.push(mk());
+  let next = 2;
+  return { draw(g, W, H, t, dt, lv) {
+    sky(g, W, H, P);
+    g.fillStyle = 'rgba(255,248,214,.9)'; g.beginPath(); g.arc(W * .8, H * .3, Math.min(W, H) * .11, 0, TAU); g.fill();
+    if (t > next) { next = t + 1.6 + R() * 2; const k = ks[Math.floor(R() * ks.length)]; if (!k.cut) k.cut = .001; }
+    ks.forEach((k, i) => {
+      let x = k.x * W + Math.sin(t * k.sp + k.ph) * W * .03, y = k.y * H + Math.cos(t * k.sp * 1.3 + k.ph) * H * .025;
+      const sz = k.s * Math.min(W, H) * 1.9;
+      if (k.cut) { k.cut += dt; x += k.cut * W * .08; y -= k.cut * H * .03 + k.cut * k.cut * H * .02; if (x > W + 40 || y < -60 || k.cut > 9) { Object.assign(k, mk(), { cut: 0 }); return; } }
+      const ax = k.ax * W, ay = H * (1 - roofs[Math.floor(k.ax * 23)]);
+      g.strokeStyle = 'rgba(255,255,255,' + (k.cut ? Math.max(0, .5 - k.cut * .3) : .6) + ')'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(ax, ay); g.quadraticCurveTo((ax + x) / 2, (ay + y) / 2 + H * .08, x, y + sz); g.stroke();
+      g.strokeStyle = rgba(k.c, .9); g.lineWidth = 2; g.beginPath(); g.moveTo(x, y + sz);
+      for (let j = 1; j <= 6; j++) g.lineTo(x + Math.sin(t * 3 + j + i) * 5 * j * .5, y + sz + j * sz * .35); g.stroke();
+      g.fillStyle = k.c; g.beginPath(); g.moveTo(x, y - sz); g.lineTo(x + sz * .72, y); g.lineTo(x, y + sz * 1.05); g.lineTo(x - sz * .72, y); g.closePath(); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, y - sz); g.lineTo(x, y + sz * 1.05); g.moveTo(x - sz * .72, y); g.lineTo(x + sz * .72, y); g.stroke();
+    });
+    g.fillStyle = '#3a1630'; g.beginPath(); g.moveTo(0, H);
+    for (let i = 0; i < 24; i++) { const x0 = i / 23 * W, top = H * (1 - roofs[i]); g.lineTo(x0, top); g.lineTo(x0 + W / 23, top); }
+    g.lineTo(W, H); g.closePath(); g.fill();
+    for (let i = 0; i < 24; i += 2) person(g, i / 23 * W + W / 46, H * (1 - roofs[i]), H * .07, '#1d0b1c');
+  } };
+};
+
+SCENES.colour = (S) => {
+  const R = S.rand, P = S.pal, parts = []; let cd = 0;
+  const burst = (W, H) => { const x = W * (.1 + R() * .8), y = H * (.1 + R() * .45), c = P.c[Math.floor(R() * P.c.length)]; for (let i = 0; i < 46; i++) { const a = R() * TAU, v = 30 + R() * 130; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: 1.5 + R(), age: 0, r: 4 + R() * 9, c }); } };
+  return { draw(g, W, H, t, dt, lv) {
+    sky(g, W, H, P);
+    cd -= dt; if ((lv > .7 && cd <= 0) || cd < -1.4) { burst(W, H); cd = .5; }
+    g.globalCompositeOperation = 'lighter';
+    for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.age += dt; if (p.age > p.life) { parts.splice(i, 1); continue; } p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .985; p.vy = p.vy * .985 + 22 * dt; const a = (1 - p.age / p.life) * .5; g.fillStyle = rgba(p.c, a); g.beginPath(); g.arc(p.x, p.y, p.r * (1 + p.age), 0, TAU); g.fill(); }
+    g.globalCompositeOperation = 'source-over';
+    g.fillStyle = 'rgba(30,8,40,.55)'; g.fillRect(0, H * .8, W, H * .2);
+    const n = 5, u = Math.min(W, H);
+    for (let i = 0; i < n; i++) {
+      const bx = W * (.12 + i * .17), by = H * .88, sw = Math.sin(t * 3.2 + i * 1.3);
+      person(g, bx, by, u * .3, '#2a0f33'); g.fillStyle = P.c[i % P.c.length]; g.beginPath(); g.moveTo(bx - u * .06, by); g.lineTo(bx - u * .04, by - u * .18); g.lineTo(bx + u * .04, by - u * .18); g.lineTo(bx + u * .06, by); g.fill();
+      g.save(); g.translate(bx + u * .03, by - u * .17); g.rotate(-1.2 + sw * .5); g.strokeStyle = '#e8c48a'; g.lineWidth = Math.max(3, u * .012); g.lineCap = 'round'; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -u * .26); g.stroke(); g.restore();
+      const mx = bx + W * .085; person(g, mx, by, u * .3, '#1c0a26');
+      g.strokeStyle = '#ffd9a0'; g.lineWidth = 3; g.beginPath(); g.arc(mx - u * .04, by - u * .17, u * .05, 0, TAU); g.stroke();
+    }
+  } };
+};
+
+SCENES.umbrellas = (S) => {
+  const R = S.rand, P = S.pal, lights = []; for (let i = 0; i < 60; i++) lights.push({ x: R(), y: R() * .5, p: R() * TAU });
+  const elephant = (g, x, y, u, t, ph) => {
+    const by = y + Math.sin(t * 2 + ph) * u * .004; g.fillStyle = '#0a0716';
+    g.beginPath(); g.ellipse(x, by - u * .17, u * .17, u * .12, 0, 0, TAU); g.fill();
+    g.beginPath(); g.arc(x + u * .18, by - u * .22, u * .08, 0, TAU); g.fill();
+    g.lineWidth = u * .035; g.lineCap = 'round'; g.strokeStyle = '#0a0716'; g.beginPath(); g.moveTo(x + u * .24, by - u * .2); g.quadraticCurveTo(x + u * .3, by - u * .1, x + u * .25, by - u * .02 + Math.sin(t * 2.4 + ph) * u * .01); g.stroke();
+    for (let i = 0; i < 4; i++) { const lx = x - u * .12 + i * u * .08; g.fillRect(lx, by - u * .1, u * .04, u * .1); }
+    g.fillStyle = P.c[1]; g.beginPath(); g.arc(x + u * .17, by - u * .27, u * .028, 0, TAU); g.fill();
+    g.fillStyle = rgba(P.c[1], .8); g.fillRect(x - u * .05, by - u * .29, u * .1, u * .03);
+  };
+  return { draw(g, W, H, t, dt, lv) {
+    sky(g, W, H, P); const u = Math.min(W * .62, H * 1.2);
+    lights.forEach((l) => { g.fillStyle = 'rgba(255,240,200,' + (.25 + .3 * Math.sin(t * 2 + l.p)) + ')'; g.beginPath(); g.arc(l.x * W, l.y * H, 1.3, 0, TAU); g.fill(); });
+    g.fillStyle = '#07040f'; g.fillRect(0, H * .9, W, H * .1);
+    const xs = [.2, .5, .8];
+    for (let row = 0; row < 2; row++) {
+      for (let k = 0; k < 7; k++) {
+        const x = W * (.08 + k * .14), up = (Math.sin(t * 2.2 + k * .8 + row * Math.PI) * .5 + .5) + lv * .2, r = Math.min(W * .055, H * .09);
+        const y = H * (.2 + row * .2) - up * H * .05;
+        const c = P.c[(k + row) % P.c.length];
+        g.strokeStyle = '#d9b46a'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + H * .12); g.stroke();
+        g.fillStyle = c; g.beginPath(); g.arc(x, y, r, Math.PI, 0); for (let s = 0; s < 6; s++) g.arc(x + r - (s + .5) * r / 3, y, r / 6, 0, Math.PI); g.closePath(); g.fill();
+        g.fillStyle = '#ffe9a8'; g.beginPath(); g.arc(x, y - r - 3, 3, 0, TAU); g.fill();
+        for (let s = 0; s < 5; s++) { g.fillStyle = 'rgba(255,240,200,' + (.4 + .5 * Math.sin(t * 5 + s + k)) + ')'; g.beginPath(); g.arc(x - r + (s + .5) * 2 * r / 5, y - r * .15, 1.6, 0, TAU); g.fill(); }
+      }
+    }
+    xs.forEach((fx, i) => elephant(g, W * fx, H * .92, u, t, i * 1.7));
+  } };
+};
+
+SCENES.boats = (S) => {
+  const P = S.pal;
+  return { draw(g, W, H, t, dt, lv) {
+    sky(g, W, H, P);
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.fillRect(0, H * .3, W, 2);
+    g.fillStyle = '#2f8f58'; g.fillRect(0, H * .28, W, H * .04);
+    for (let r = 0; r < 14; r++) { const y = H * (.36 + r * .045); g.strokeStyle = 'rgba(255,255,255,' + (.06 + r * .008) + ')'; g.lineWidth = 1.2; g.beginPath(); for (let x = 0; x <= W; x += 14) { const yy = y + Math.sin(x * .03 + t * 1.4 + r) * 2.5; if (x === 0) g.moveTo(x, yy); else g.lineTo(x, yy); } g.stroke(); }
+    const lanes = [[.5, .55, 3.2, 0], [.67, .75, 3.4, .35], [.85, 1, 3.6, .7]];
+    lanes.forEach(([ly, sc, sp, off], li) => {
+      const L = W * .62 * sc, y = H * ly, x = ((t * .06 * sp + off) % 1.4) * (W + L) - L;
+      const hh = H * .05 * sc;
+      g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.moveTo(x, y + hh * .8); g.lineTo(x - W * .06 * sc, y + hh * 1.3); g.lineTo(x, y + hh * 1.6); g.fill();
+      g.fillStyle = P.c[li]; g.beginPath(); g.moveTo(x, y); g.lineTo(x + L, y); g.quadraticCurveTo(x + L + hh * 2, y - hh * 2.6, x + L + hh * 1.2, y - hh * 3.4); g.quadraticCurveTo(x + L - hh * .2, y + hh * .3, x + L - hh * 2, y + hh * 1.1); g.lineTo(x + hh * 2, y + hh * 1.1); g.quadraticCurveTo(x - hh * .5, y + hh * .6, x - hh * .8, y - hh * .5); g.closePath(); g.fill();
+      const n = 16, sw = Math.sin(t * 5.4);
+      for (let i = 0; i < n; i++) {
+        const rx = x + L * (.1 + i * .052);
+        g.fillStyle = i % 2 ? '#f2e8c9' : '#ff7a1a'; g.beginPath(); g.arc(rx, y - hh * .85, hh * .42, 0, TAU); g.fill(); g.fillRect(rx - hh * .3, y - hh * .5, hh * .6, hh * .5);
+        g.strokeStyle = '#2a1a10'; g.lineWidth = Math.max(1.5, hh * .15); g.beginPath(); g.moveTo(rx, y - hh * .2); g.lineTo(rx - hh * .6 + sw * hh * .9, y + hh * 1.7); g.stroke();
+      }
+      g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + L * .5, y); g.lineTo(x + L * .5, y - hh * 3.2); g.stroke();
+      g.fillStyle = '#e8266f'; g.fillRect(x + L * .5, y - hh * 3.2, hh * 1.4, hh * .8);
+    });
+  } };
+};
+
+SCENES.pyramid = (S) => {
+  const R = S.rand, P = S.pal, wins = []; for (let i = 0; i < 90; i++) wins.push({ x: R(), y: .25 + R() * .45, on: R() > .35 });
+  const bl = []; for (let i = 0; i < 12; i++) bl.push({ x: i / 12, w: 1 / 12 + .005, h: .3 + R() * .35 });
+  let parts = [], broke = false, prev = 0;
+  return { draw(g, W, H, t, dt, lv) {
+    sky(g, W, H, P);
+    g.fillStyle = '#26103a'; bl.forEach((b) => g.fillRect(b.x * W, H * (1 - b.h), b.w * W, H * b.h));
+    g.fillStyle = 'rgba(255,225,120,.75)'; wins.forEach((w) => { if (w.on) g.fillRect(w.x * W, H * w.y, 3, 4); });
+    g.fillStyle = '#150726'; g.fillRect(0, H * .9, W, H * .1);
+    const T = 16, ph = (t % T) / T; if (ph < prev) { broke = false; parts = []; } prev = ph;
+    const u = Math.min(W * .11, H * .12), cx = W / 2, base = H * .9;
+    g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(cx, 0); g.lineTo(cx, H * .12); g.stroke();
+    const potY = H * .12 + (broke ? -9999 : 0);
+    if (!broke) { g.fillStyle = '#c8602a'; g.beginPath(); g.arc(cx, potY + u * .35, u * .38, 0, TAU); g.fill(); g.fillStyle = '#fff'; g.fillRect(cx - u * .3, potY + u * .02, u * .6, u * .09); g.fillStyle = P.c[0]; g.fillRect(cx - u * .3, potY + u * .15, u * .6, u * .05); }
+    const collapse = ph > .84 ? (ph - .84) / .16 : 0;
+    for (let j = 0; j < 5; j++) {
+      const cnt = 5 - j, start = .06 + j * .1, p = Math.min(1, Math.max(0, (ph - start) / .1)), e = 1 - Math.pow(1 - p, 3);
+      for (let i = 0; i < cnt; i++) {
+        const x = cx + (i - (cnt - 1) / 2) * u * 1.05 + (collapse ? Math.sin(i * 3 + j) * collapse * u * 2 : 0);
+        let y = base - j * u * .95 + (1 - e) * u * 4 + collapse * collapse * u * (3 + j);
+        if (collapse > 0) g.globalAlpha = Math.max(0, 1 - collapse * 1.1);
+        person(g, x, y, u * 1.05, P.c[(i + j) % P.c.length]);
+        if (j === 4 && p >= 1 && ph < .84) { g.strokeStyle = P.c[0]; g.lineWidth = u * .1; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y - u * .6); g.lineTo(x, y - u * 1.3 - Math.min(1, (ph - .5) / .15) * u * .5); g.stroke(); }
+        g.globalAlpha = 1;
+      }
+    }
+    if (ph > .7 && !broke) { broke = true; for (let i = 0; i < 70; i++) { const a = R() * TAU, v = 40 + R() * 150; parts.push({ x: cx, y: H * .12 + u * .35, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, c: i % 3 ? '#fff' : '#c8602a', r: 2 + R() * 4 }); } }
+    parts.forEach((p) => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 320 * dt; g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, p.r, 0, TAU); g.fill(); });
+  } };
+};
+
+SCENES.mandala = (S) => {
+  const R = S.rand, P = S.pal, cf = []; for (let i = 0; i < 40; i++) cf.push({ x: R(), y: R(), s: .3 + R(), c: P.c[Math.floor(R() * 4)], p: R() * TAU });
+  const disc = (g, x, y, r, a, k) => {
+    g.save(); g.translate(x, y); g.rotate(a);
+    for (let i = 0; i < 12; i++) { g.rotate(TAU / 12); g.fillStyle = P.c[(i + k) % 4]; g.beginPath(); g.moveTo(0, 0); g.lineTo(r * .96, -r * .17); g.lineTo(r * .96, r * .17); g.closePath(); g.fill(); }
+    g.fillStyle = P.c[(k + 1) % 4]; g.beginPath(); g.arc(0, 0, r * .62, 0, TAU); g.fill();
+    g.fillStyle = P.c[(k + 2) % 4]; g.beginPath(); g.arc(0, 0, r * .46, 0, TAU); g.fill();
+    for (let i = 0; i < 16; i++) { const aa = i / 16 * TAU; g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(Math.cos(aa) * r * .54, Math.sin(aa) * r * .54, r * .035, 0, TAU); g.fill(); }
+    g.fillStyle = '#ffd25a'; g.beginPath(); g.arc(0, 0, r * .16, 0, TAU); g.fill(); g.restore();
+  };
+  return { draw(g, W, H, t, dt, lv) {
+    sky(g, W, H, P); const r = Math.min(W, H) * .17;
+    cf.forEach((c) => { g.fillStyle = rgba(c.c, .55); g.beginPath(); g.arc(((c.x * W + t * 8 * c.s) % W), (c.y * H + Math.sin(t + c.p) * 6), 2 * c.s, 0, TAU); g.fill(); });
+    for (let j = 0; j < 3; j++) for (let i = 0; i < 4; i++) {
+      const k = j * 4 + i, x = (((i + (j % 2) * .5) / 4 + t * .012) % 1) * (W + r * 2) - r, y = H * (.2 + j * .3) + Math.sin(t * .8 + k) * 6;
+      disc(g, x, y, r * (1 + lv * .05), t * (.3 + (k % 3) * .12) * (k % 2 ? 1 : -1), k);
+    }
+  } };
+};
+
+SCENES.garba = (S) => {
+  const R = S.rand, P = S.pal, bulbs = []; for (let i = 0; i < 28; i++) bulbs.push(R() * TAU);
+  return { draw(g, W, H, t, dt, lv) {
+    sky(g, W, H, P);
+    for (let i = 0; i < 28; i++) { const x = i / 27 * W, y = H * .06 + Math.sin(i / 27 * Math.PI) * H * .06; g.fillStyle = rgba(P.c[i % 4], .55 + .4 * Math.sin(t * 3 + bulbs[i])); g.beginPath(); g.arc(x, y, 3.2, 0, TAU); g.fill(); }
+    const cx = W / 2, cy = H * .58, u = Math.min(W * .78, H * 1.45);
+    const gl = g.createRadialGradient(cx, cy, 0, cx, cy, u * .55); gl.addColorStop(0, 'rgba(255,214,120,' + (.55 + lv * .25) + ')'); gl.addColorStop(1, 'rgba(255,214,120,0)'); g.fillStyle = gl; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#ffe9a8'; g.beginPath(); g.ellipse(cx, cy + u * .02, u * .045, u * .02, 0, 0, TAU); g.fill();
+    g.fillStyle = '#ffb02e'; g.beginPath(); g.moveTo(cx - u * .018, cy); g.quadraticCurveTo(cx, cy - u * (.1 + Math.sin(t * 9) * .012 + lv * .02), cx + u * .018, cy); g.fill();
+    for (let k = 0; k < 3; k++) {
+      const rad = u * (.2 + k * .17), n = 10 + k * 6, dir = k % 2 ? -1 : 1, list = [];
+      for (let i = 0; i < n; i++) { const a = i / n * TAU + t * .3 * dir / (k + 1); list.push([a, Math.sin(a) * rad * .36 + cy, Math.cos(a) * rad + cx, i]); }
+      list.sort((a, b) => a[1] - b[1]);
+      list.forEach(([a, y, x, i]) => {
+        const s = u * (.045 + k * .005) * (1 + (y - cy) / H * .6), bob = Math.abs(Math.sin(t * 6.4 + i * .5)) * s * .35 * (1 + lv);
+        g.fillStyle = P.c[(i + k) % 4]; g.beginPath(); g.moveTo(x - s * .85, y); g.quadraticCurveTo(x, y - s * 1.8 - bob, x + s * .85, y); g.closePath(); g.fill();
+        g.fillStyle = '#2a0d2c'; g.beginPath(); g.arc(x, y - s * 1.9 - bob, s * .45, 0, TAU); g.fill();
+        g.strokeStyle = 'rgba(255,230,180,.9)'; g.lineWidth = 2; g.beginPath(); g.arc(x, y - s * 1.2 - bob, s * .8, Math.PI * 1.1 + Math.sin(t * 6.4 + i) * .4, Math.PI * 1.9); g.stroke();
+      });
+    }
+  } };
+};
+
+SCENES.chariot = (S) => {
+  const R = S.rand, P = S.pal, trees = [], lan = [];
+  for (let i = 0; i < 30; i++) trees.push({ x: R(), h: .25 + R() * .3, w: .03 + R() * .03 });
+  for (let i = 0; i < 18; i++) lan.push({ x: R(), y: R(), s: .3 + R() * .7, p: R() * TAU });
+  return { draw(g, W, H, t, dt, lv) {
+    sky(g, W, H, P); const u = Math.min(W, H * 1.6);
+    g.fillStyle = '#0a1a18'; trees.forEach((tr) => { const x = tr.x * W, h = tr.h * H, w = tr.w * W; g.beginPath(); g.moveTo(x - w, H * .78); g.lineTo(x, H * .78 - h); g.lineTo(x + w, H * .78); g.fill(); });
+    g.fillStyle = '#120d08'; g.fillRect(0, H * .78, W, H * .22);
+    const cx = W * .56 + Math.sin(t * .15) * W * .02, by = H * .8, bw = u * .34;
+    const rope = (x0, y0) => { g.strokeStyle = '#c9a36a'; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - bw * .5, by - u * .08); g.quadraticCurveTo((cx - bw * .5 + x0) / 2, (by + y0) / 2 + 10, x0, y0); g.stroke(); };
+    for (let i = 0; i < 9; i++) { const x = W * .06 + i * W * .04 - (t * 6) % (W * .04) * 0, y = by - u * .02; rope(x + W * .02, y - u * .06); person(g, x + W * .02 + Math.sin(t * 3 + i) * 2, y, u * .14, '#050a09'); }
+    g.fillStyle = '#4a2c14'; g.fillRect(cx - bw * .5, by - u * .16, bw, u * .1);
+    g.fillStyle = '#6b3f1c'; g.fillRect(cx - bw * .42, by - u * .3, bw * .84, u * .14);
+    g.fillStyle = '#8a5424'; g.fillRect(cx - bw * .3, by - u * .43, bw * .6, u * .13);
+    g.fillStyle = P.c[1]; g.beginPath(); g.moveTo(cx - bw * .42, by - u * .43); g.lineTo(cx, by - u * .6); g.lineTo(cx + bw * .42, by - u * .43); g.closePath(); g.fill();
+    g.fillStyle = P.c[0]; g.beginPath(); g.arc(cx, by - u * .62, u * .015, 0, TAU); g.fill();
+    for (let i = 0; i < 5; i++) { g.fillStyle = P.c[(i % 2) ? 0 : 3]; g.beginPath(); g.arc(cx - bw * .3 + i * bw * .15, by - u * .36, u * .012, 0, TAU); g.fill(); }
+    [[-.3, 1], [.3, 1]].forEach(([dx]) => {
+      const wx = cx + dx * bw, wr = u * .1, a = t * .5; g.fillStyle = '#2a190a'; g.beginPath(); g.arc(wx, by - wr * .6, wr, 0, TAU); g.fill();
+      g.strokeStyle = '#c9a36a'; g.lineWidth = 2; for (let s = 0; s < 12; s++) { const aa = a + s / 12 * TAU; g.beginPath(); g.moveTo(wx, by - wr * .6); g.lineTo(wx + Math.cos(aa) * wr * .95, by - wr * .6 + Math.sin(aa) * wr * .95); g.stroke(); }
+    });
+    lan.forEach((l) => { const y = H - ((t * 14 * l.s + l.y * H) % H); const x = l.x * W + Math.sin(t + l.p) * 12; const gl = g.createRadialGradient(x, y, 0, x, y, 12); gl.addColorStop(0, rgba(P.c[0], .9)); gl.addColorStop(1, rgba(P.c[0], 0)); g.fillStyle = gl; g.fillRect(x - 12, y - 12, 24, 24); });
+    for (let i = 0; i < 3; i++) { const fx = ((t * 6 * (i + 1) + i * W * .4) % (W * 1.6)) - W * .3; const gr = g.createLinearGradient(fx, 0, fx + W * .5, 0); gr.addColorStop(0, 'rgba(220,235,230,0)'); gr.addColorStop(.5, 'rgba(220,235,230,.12)'); gr.addColorStop(1, 'rgba(220,235,230,0)'); g.fillStyle = gr; g.fillRect(fx, H * (.45 + i * .12), W * .5, H * .16); }
+  } };
+};
+
+/* ======================== SOUNDS ======================== */
+const AE = { ctx: null, master: null, cur: null, vol: .75, hits: [], noise: null };
+function audio() {
+  if (!AE.ctx) {
+    const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
+    try { AE.ctx = new C(); } catch (e) { return null; }
+    AE.master = AE.ctx.createGain(); AE.master.gain.value = AE.vol;
+    const comp = AE.ctx.createDynamicsCompressor(); AE.master.connect(comp); comp.connect(AE.ctx.destination);
+    const len = AE.ctx.sampleRate * 2, buf = AE.ctx.createBuffer(1, len, AE.ctx.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; AE.noise = buf;
+  }
+  try { AE.ctx.resume(); } catch (e) {}
+  return AE.ctx;
+}
+const level = () => { if (!AE.ctx) return 0; const now = AE.ctx.currentTime; let m = 0; AE.hits = AE.hits.filter((h) => now - h[0] < 1); for (const [t, s] of AE.hits) if (t <= now) m = Math.max(m, s * Math.exp(-(now - t) * 7)); return Math.min(1, m); };
+function kit(bus) {
+  const c = AE.ctx, stops = [];
+  const k = {
+    bus,
+    pulse(t, s) { AE.hits.push([t, s]); },
+    tone(f, t, d, type, g, f2) {
+      const o = c.createOscillator(), e = c.createGain(); o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+      e.gain.setValueAtTime(.0001, t); e.gain.exponentialRampToValueAtTime(g, t + .008); e.gain.exponentialRampToValueAtTime(.0001, t + d);
+      o.connect(e); e.connect(bus); o.start(t); o.stop(t + d + .05);
+    },
+    hit(t, d, f, q, type, g) {
+      const s = c.createBufferSource(), fl = c.createBiquadFilter(), e = c.createGain(); s.buffer = AE.noise; fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+      e.gain.setValueAtTime(.0001, t); e.gain.exponentialRampToValueAtTime(g, t + .004); e.gain.exponentialRampToValueAtTime(.0001, t + d);
+      s.connect(fl); fl.connect(e); e.connect(bus); s.start(t, Math.random()); s.stop(t + d + .05);
+    },
+    drum(t, f0, f1, d, g) { k.tone(f0, t, d, 'sine', g, f1); k.hit(t, .02, 800, .7, 'bandpass', g * .35); },
+    bed(type, f, q, g) {
+      const s = c.createBufferSource(), fl = c.createBiquadFilter(), e = c.createGain(); s.buffer = AE.noise; s.loop = true; fl.type = type; fl.frequency.value = f; fl.Q.value = q; e.gain.value = g;
+      s.connect(fl); fl.connect(e); e.connect(bus); s.start(); stops.push(() => { try { s.stop(); } catch (x) {} }); return e;
+    },
+    drone(f, g, type) {
+      [0, 4].forEach((det) => { const o = c.createOscillator(), e = c.createGain(), fl = c.createBiquadFilter(); o.type = type || 'sawtooth'; o.frequency.value = f; o.detune.value = det; fl.type = 'lowpass'; fl.frequency.value = 700; e.gain.value = g; o.connect(fl); fl.connect(e); e.connect(bus); o.start(); stops.push(() => { try { o.stop(); } catch (x) {} }); });
+    },
+    stop() { stops.forEach((f) => f()); }
+  };
+  return k;
+}
+const SOUNDS = {};
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+
+SOUNDS.kites = (k) => {
+  const wind = k.bed('bandpass', 700, .7, .1); k.bed('lowpass', 500, .5, .05);
+  return { dur: () => .25, tick(n, t) {
+    if (n % 8 === 0) wind.gain.linearRampToValueAtTime(.05 + Math.random() * .13, t + 1.8);
+    if (n % 8 === 0) { k.drum(t, 95, 55, .3, .35); k.pulse(t, .8); } else if (n % 8 === 4) { k.drum(t, 120, 80, .2, .2); k.pulse(t, .4); }
+    if (n % 8 === 6 || n % 8 === 7) k.hit(t, .05, 4200, 1, 'highpass', .07);
+    if (Math.random() < .08) { k.hit(t, .05, 5200, 1, 'highpass', .22); k.tone(2100, t, .12, 'sine', .04, 900); k.pulse(t, .6); }
+  } };
+};
+SOUNDS.colour = (k) => {
+  const B = [0, 3, 8, 10], D = [2, 4, 6, 7, 12, 14], C = [4, 12];
+  return { dur: () => 60 / 112 / 2, tick(n, t) {
+    const i = n % 16;
+    if (B.includes(i)) { k.drum(t, 100, 60, .22, .42); k.pulse(t, .9); }
+    if (D.includes(i)) k.tone(i % 4 === 2 ? 330 : 260, t, .09, 'triangle', .22, 200);
+    if (C.includes(i)) { k.hit(t, .07, 2200, .8, 'bandpass', .3); k.pulse(t, .5); }
+    if (Math.random() < .12) k.hit(t, .3, 1400, .6, 'bandpass', .12);
+  } };
+};
+SOUNDS.pooram = (k) => {
+  k.bed('lowpass', 420, .5, .04);
+  return { dur: (n) => { const p = Math.min(1, (n % 96) / 72); return .32 - .235 * p * p; }, tick(n, t) {
+    const i = n % 96, strong = i % 4 === 0;
+    k.hit(t, strong ? .1 : .05, strong ? 900 : 2000, 1.2, 'bandpass', strong ? .38 : .17); if (strong) { k.tone(210, t, .13, 'sine', .3, 150); k.pulse(t, .9); } else if (i > 60) k.pulse(t, .4);
+    if (i % 2 === 0) k.hit(t, .07, 6500, 1, 'highpass', .07 + Math.min(.08, i / 900));
+    if (i === 0) { k.hit(t, 1.2, 5000, .6, 'highpass', .2); k.pulse(t, 1); }
+    if (i === 72 || i === 80 || i === 88) k.tone(i === 88 ? 392 : 330, t, 1, 'sawtooth', .07, i === 88 ? 392 : 330);
+  } };
+};
+SOUNDS.boats = (k) => {
+  const water = k.bed('lowpass', 900, .6, .13);
+  return { dur: () => 60 / 100 / 2, tick(n, t) {
+    if (n % 2 === 0) { k.drum(t, 110, 60, .2, .3); k.hit(t + .04, .22, 1100, .8, 'bandpass', .12); k.pulse(t, .8); }
+    if (n % 4 === 2) k.hit(t, .05, 2300, 1, 'bandpass', .22);
+    if (n % 16 === 0) { k.tone(190, t, .5, 'sawtooth', .05, 230); k.tone(380, t, .5, 'sawtooth', .025, 460); water.gain.linearRampToValueAtTime(.06 + Math.random() * .12, t + 1.5); }
+  } };
+};
+SOUNDS.dahi = (k) => ({ dur: () => .1, tick(n, t) {
+  const i = n % 64, roll = i >= 48;
+  if (i % 2 === 0 || roll) k.hit(t, .04, 3000, 2, 'bandpass', roll ? .26 : .2);
+  if (i % 8 === 0) { k.drum(t, 85, 45, .3, .5); k.pulse(t, 1); } else if (i % 8 === 4) { k.drum(t, 135, 90, .2, .28); k.pulse(t, .5); }
+  if (i === 63) { k.hit(t + .1, 1.4, 4200, .6, 'highpass', .32); k.drum(t + .1, 60, 30, .7, .6); k.pulse(t + .1, 1); }
+} });
+SOUNDS.tarnetar = (k) => {
+  k.drone(146.83, .035, 'sine'); const sc = [293.66, 329.63, 369.99, 440, 493.88, 587.33, 659.25]; let ni = 2;
+  return { dur: () => .14, tick(n, t) {
+    const i = n % 12;
+    if (i === 0 || i === 6) { k.drum(t, 100, 58, .26, .45); k.pulse(t, .9); } if (i === 3 || i === 9) { k.hit(t, .06, 1900, 1.2, 'bandpass', .26); k.pulse(t, .5); }
+    if ([2, 5, 8, 11].includes(i)) k.tone(180, t, .07, 'triangle', .1, 140);
+    k.tone(4000 + Math.random() * 800, t, .05, 'sine', .035); k.hit(t, .03, 7000, 1, 'highpass', .03);
+    if (i % 6 === 0) { ni = Math.max(0, Math.min(6, ni + pick([-2, -1, 0, 1, 2]))); k.tone(sc[ni], t, .8, 'sine', .11); k.tone(sc[ni] * 2, t, .5, 'sine', .015); }
+  } };
+};
+SOUNDS.garba = (k) => {
+  k.drone(146.83, .028); const sc = [293.66, 329.63, 369.99, 440, 493.88, 587.33], motif = []; for (let i = 0; i < 8; i++) motif.push(Math.floor(Math.random() * sc.length));
+  return { dur: () => 60 / 128 / 2, tick(n, t) {
+    const i = n % 8;
+    if (i === 0 || i === 4 || i === 5) { k.drum(t, 105, 60, .22, .45); k.pulse(t, .9); } if (i === 2 || i === 6) k.tone(280, t, .08, 'triangle', .22, 190);
+    if (i === 2 || i === 4 || i === 6) { k.hit(t, .06, 2400, .9, 'bandpass', .3); k.pulse(t, .6); }
+    if (n % 2 === 0) { const f = sc[motif[(n / 2) % 8]]; k.tone(f, t, .22, 'sawtooth', .05); }
+    if (n % 64 === 0) for (let j = 0; j < 8; j++) motif[j] = Math.floor(Math.random() * sc.length);
+  } };
+};
+SOUNDS.chariot = (k) => {
+  const crowd = k.bed('lowpass', 420, .4, .08); k.bed('highpass', 3500, .5, .008);
+  return { dur: () => 1.25, tick(n, t) {
+    if (n % 2 === 0) { k.drum(t, 70, 38, .7, .6); k.pulse(t, .9); } else { k.drum(t, 62, 38, .6, .3); k.pulse(t, .4); }
+    if (n % 4 === 0) { k.tone(520, t, 2.6, 'sine', .08); k.tone(520 * 2.76, t, 1.6, 'sine', .04); k.tone(520 * 5.4, t, .9, 'sine', .02); }
+    if (n % 3 === 0 && Math.random() < .6) { const s = AE.ctx.createBufferSource(), fl = AE.ctx.createBiquadFilter(), e = AE.ctx.createGain(); s.buffer = AE.noise; fl.type = 'bandpass'; fl.Q.value = 6; fl.frequency.setValueAtTime(300, t); fl.frequency.linearRampToValueAtTime(720, t + .8); e.gain.setValueAtTime(.0001, t); e.gain.exponentialRampToValueAtTime(.07, t + .2); e.gain.exponentialRampToValueAtTime(.0001, t + .85); s.connect(fl); fl.connect(e); e.connect(k.bus); s.start(t); s.stop(t + .9); }
+    if (n % 4 === 1) crowd.gain.linearRampToValueAtTime(.05 + Math.random() * .1, t + 2);
+  } };
+};
+
+/* engine: one festival playing at a time */
+function playSound(item) {
+  stopSound(); stopMusic(); const c = audio(); if (!c) return false;
+  const bus = c.createGain(); bus.gain.setValueAtTime(.0001, c.currentTime); bus.gain.exponentialRampToValueAtTime(1, c.currentTime + .8); bus.connect(AE.master);
+  const k = kit(bus), mk = SOUNDS[item.f.sound] || SOUNDS.garba, s = mk(k);
+  const cur = { item, bus, k, s, n: 0, next: c.currentTime + .08, timer: 0 };
+  AE.cur = cur;
+  const run = () => { if (AE.cur !== cur) return; const lim = c.currentTime + .3; let guard = 0; while (cur.next < lim && guard++ < 64) { s.tick(cur.n, cur.next); cur.next += s.dur(cur.n); cur.n++; } };
+  cur.timer = setInterval(run, 60); run();
+  setPlaying(item);
+  return true;
+}
+function stopSound() {
+  const cur = AE.cur; if (!cur) return; AE.cur = null; clearInterval(cur.timer);
+  try { const c = AE.ctx; cur.bus.gain.cancelScheduledValues(c.currentTime); cur.bus.gain.setValueAtTime(Math.max(.0001, cur.bus.gain.value || 1), c.currentTime); cur.bus.gain.exponentialRampToValueAtTime(.0001, c.currentTime + .5); setTimeout(() => { cur.k.stop(); try { cur.bus.disconnect(); } catch (e) {} }, 650); } catch (e) { cur.k.stop(); }
+  setPlaying(null);
+}
+function setPlaying(item) { items.forEach((it) => { const on = it === item; it.btn.setAttribute('aria-pressed', String(on)); $('.lbl', it.btn).textContent = on ? 'Stop sound' : 'Play sound'; it.root.classList.toggle('live', on); }); }
+
+/* ======================== REAL MUSIC (YouTube) ======================== */
+const MU = { item: null, list: [], idx: 0, bad: new Set(), yt: null, ready: false, loading: false, want: null, playing: false, poll: 0 };
+const dmsg = (t) => { const m = $('#dMsg'); m.textContent = t || ''; m.hidden = !t; };
+function ensureYT(cb) {
+  if (MU.yt && MU.ready) { cb(); return; }
+  MU.want = cb; if (MU.yt || MU.loading) return; MU.loading = true;
+  window.onYouTubeIframeAPIReady = () => {
+    MU.yt = new YT.Player('ytDock', { width: 200, height: 200, playerVars: { controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, playsinline: 1, rel: 0, modestbranding: 1 }, events: {
+      onReady: () => { MU.ready = true; MU.yt.setVolume(Math.round(AE.vol * 100)); if (MU.want) { const f = MU.want; MU.want = null; f(); } },
+      onStateChange: (e) => { if (e.data === 0 && MU.item) musicAt(MU.idx + 1); },
+      onError: () => { if (MU.item) { MU.bad.add(MU.list[MU.idx].yt); musicAt(MU.idx + 1); } }
+    } });
+  };
+  const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api';
+  sc.onerror = () => { MU.loading = false; dmsg('The YouTube player could not load here. Open the standalone page on a normal web address to use real music.'); };
+  document.head.appendChild(sc);
+}
+function setMusicUI() { items.forEach((it) => { if (it.mbtn) { const on = MU.item === it; it.mbtn.setAttribute('aria-pressed', String(on)); $('.lbl', it.mbtn).textContent = on ? 'Stop music' : 'Real music'; } }); }
+function musicAt(i) {
+  const L = MU.list; if (!L.length) return; let idx = ((i % L.length) + L.length) % L.length, tries = 0;
+  while (MU.bad.has(L[idx].yt) && tries < L.length) { idx = (idx + 1) % L.length; tries++; }
+  if (tries >= L.length) { dmsg('None of these tracks could play. Replace the video IDs in the music list of this festival.'); $('#dTitle').textContent = 'Nothing to play'; $('#dBy').textContent = ''; return; }
+  dmsg(''); MU.idx = idx; const t = L[idx]; $('#dTitle').textContent = t.title || 'Untitled'; $('#dBy').textContent = t.by || 'YouTube';
+  ensureYT(() => { try { MU.yt.loadVideoById(t.yt); MU.yt.setVolume(Math.round(AE.vol * 100)); } catch (e) {} });
+}
+function playMusic(it, i) {
+  stopSound(); MU.item = it; MU.list = it.f.music || []; MU.playing = true; $('#dFest').textContent = it.f.name; $('#dock').hidden = false; setMusicUI();
+  clearInterval(MU.poll); MU.poll = setInterval(pollMusic, 500); musicAt(i);
+}
+function stopMusic() {
+  if (!MU.item && $('#dock').hidden) return; MU.item = null; MU.playing = false; clearInterval(MU.poll); $('#dock').hidden = true; dmsg('');
+  try { if (MU.yt && MU.ready) MU.yt.stopVideo(); } catch (e) {} setMusicUI();
+}
+function pollMusic() {
+  if (!MU.yt || !MU.ready || !MU.item) return;
+  try { const st = MU.yt.getPlayerState(); MU.playing = st === 1; $('#dPause').textContent = st === 2 ? 'Play' : 'Pause'; const d = MU.yt.getVideoData && MU.yt.getVideoData(); const cur = MU.list[MU.idx]; if (d && d.author && cur && !cur.by) $('#dBy').textContent = d.author; } catch (e) {}
+}
+$('#dClose').addEventListener('click', stopMusic);
+$('#dNext').addEventListener('click', () => musicAt(MU.idx + 1));
+$('#dPrev').addEventListener('click', () => musicAt(MU.idx - 1));
+$('#dPause').addEventListener('click', () => { try { if (MU.yt.getPlayerState() === 2) MU.yt.playVideo(); else MU.yt.pauseVideo(); pollMusic(); } catch (e) {} });
+
+/* ======================== PAGE ======================== */
+const items = [];
+function addFestival(f, preview) {
+  const root = el('article', 'fest' + (preview ? ' preview' : '')); root.id = 'f-' + f.id;
+  root.style.setProperty('--a1', f.pal.c[0]); root.style.setProperty('--a1ink', inkOn(f.pal.c[0]));
+  const grid = el('div', 'wrap grid'); root.append(grid);
+  const sc = el('div', 'scene'), cv = el('canvas'); cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', 'Animated scene for ' + f.name + ': ' + f.see);
+  const btn = el('button', 'play'); btn.type = 'button'; btn.setAttribute('aria-pressed', 'false'); btn.setAttribute('aria-label', 'Play or stop the sound of ' + f.name);
+  btn.append(el('span', 'ic'), el('span', 'lbl', 'Play sound'));
+  const acts = el('div', 'acts'); acts.append(btn);
+  let mbtn = null;
+  if (f.music && f.music.length) { mbtn = el('button', 'play mus'); mbtn.type = 'button'; mbtn.setAttribute('aria-pressed', 'false'); mbtn.setAttribute('aria-label', 'Play real music for ' + f.name); mbtn.append(el('span', 'ic'), el('span', 'lbl', 'Real music')); acts.append(mbtn); }
+  const eq = el('div', 'eq'); eq.setAttribute('aria-hidden', 'true'); for (let i = 0; i < 4; i++) eq.append(el('i'));
+  sc.append(cv, acts, eq);
+  const tx = el('div', 'text'), chips = el('div', 'chips');
+  chips.append(el('span', 'chip', monthName(f.months)));
+  if (inRange(NOW, f.months)) chips.append(el('span', 'chip season', 'In season this month'));
+  if (preview) chips.append(el('span', 'chip pv', 'Preview'));
+  const h = el('h2', '', f.name), pl = el('div', 'place', f.place + (f.state ? ', ' + f.state : ''));
+  const when = el('p'); when.append(el('span', 'lab', 'When'), document.createTextNode(f.when));
+  const weird = el('p'); weird.append(el('span', 'lab', 'The weird bit'), document.createTextNode(f.weird));
+  const sen = el('div', 'senses'); const a = el('div'), b = el('div'); a.append(el('b', '', 'You would hear: '), document.createTextNode(f.hear)); b.append(el('b', '', 'You would see: '), document.createTextNode(f.see)); sen.append(a, b);
+  tx.append(chips, h, pl, when, weird, sen); grid.append(sc, tx);
+  $('#list').append(root);
+  const scene = (SCENES[f.scene] || SCENES.garba)({ pal: f.pal, rand: mulberry(hash(f.id)) });
+  const it = { f, root, cv, btn, mbtn, scene, W: 600, H: 375, dpr: 1, vis: false, ratio: 0, t: 3 + (hash(f.id) % 50) / 10 };
+  items.push(it);
+  btn.addEventListener('click', () => { if (AE.cur && AE.cur.item === it) stopSound(); else if (!playSound(it)) btn.querySelector('.lbl').textContent = 'No audio here'; });
+  if (mbtn) mbtn.addEventListener('click', () => { if (MU.item === it) stopMusic(); else playMusic(it, 0); });
+  if (window.ResizeObserver) new ResizeObserver(() => size(it)).observe(sc); size(it);
+  if (io) io.observe(root);
+  addRow(f, it);
+  return it;
+}
+function size(it) {
+  const r = it.cv.parentElement.getBoundingClientRect(); const w = Math.max(200, r.width || 600), h = Math.max(120, r.height || w * .625), dpr = Math.min(2, window.devicePixelRatio || 1);
+  it.W = w; it.H = h; it.dpr = dpr; it.cv.width = Math.round(w * dpr); it.cv.height = Math.round(h * dpr);
+  if (reduce) paint(it, it.t, 0);
+}
+function paint(it, t, dt) { const g = it.cv.getContext('2d'); if (!g) return; g.setTransform(it.dpr, 0, 0, it.dpr, 0, 0); const lv = AE.cur && AE.cur.item === it ? level() : MU.item === it && MU.playing ? Math.abs(Math.sin(t * 3.3)) : .25 + .2 * Math.sin(t * 2); it.scene.draw(g, it.W, it.H, t, dt, lv); }
+let last = 0;
+function frame(ts) {
+  const dt = Math.min(.05, (ts - last) / 1000 || .016); last = ts;
+  items.forEach((it) => { if (it.vis) { it.t += dt; paint(it, it.t, dt); } });
+  requestAnimationFrame(frame);
+}
+
+/* year chart */
+function addRow(f, it) {
+  const g = $('#gtab');
+  const nm = el('button', 'nm', f.name); nm.type = 'button'; nm.style.setProperty('--col', f.pal.c[0]); nm.addEventListener('click', () => it.root.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }));
+  const row = [nm]; for (let m = 1; m <= 12; m++) { const c = el('span', 'c' + (inRange(m, f.months) ? ' on' : '') + (m === NOW ? ' now' : '')); c.style.setProperty('--col', f.pal.c[0]); if (inRange(m, f.months)) c.title = f.name + ', ' + MONTHS[m - 1]; row.push(c); }
+  g.append(...row);
+}
+function buildHead() {
+  const g = $('#gtab'); g.textContent = ''; g.append(el('span'));
+  'JFMAMJJASOND'.split('').forEach((l, i) => { const h = el('span', 'mh' + (i + 1 === NOW ? ' now' : ''), l); h.title = MONTHS[i]; g.append(h); });
+}
+
+/* scroll tracking and follow mode */
+let io = null, followOn = false, followTimer = 0;
+if (window.IntersectionObserver) {
+  io = new IntersectionObserver((es) => {
+    es.forEach((e) => { const it = items.find((x) => x.root === e.target); if (it) { it.vis = e.isIntersecting; it.ratio = e.intersectionRatio; } });
+    if (followOn) { clearTimeout(followTimer); followTimer = setTimeout(follow, 350); }
+  }, { threshold: [0, .2, .4, .6, .8, 1] });
+}
+function follow() {
+  if (!followOn) return; let best = null; items.forEach((it) => { if (it.vis && (!best || it.ratio > best.ratio)) best = it; });
+  if (best && best.ratio >= .4) { if (!AE.cur || AE.cur.item !== best) playSound(best); } else stopSound();
+}
+$('#follow').addEventListener('click', () => {
+  followOn = !followOn; $('#follow').setAttribute('aria-pressed', String(followOn));
+  if (followOn) { if (!audio()) { followOn = false; $('#follow').setAttribute('aria-pressed', 'false'); return; } follow(); } else stopSound();
+});
+$('#vol').addEventListener('input', (e) => { AE.vol = +e.target.value / 100; if (AE.master) AE.master.gain.value = AE.vol; try { if (MU.yt && MU.ready) MU.yt.setVolume(Math.round(AE.vol * 100)); } catch (x) {} });
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopSound(); });
+
+/* contribute form */
+function fillSelect(id, opts, val) { const s = $(id); opts.forEach(([v, l]) => { const o = el('option', '', l); o.value = v; s.append(o); }); s.value = val; }
+fillSelect('#fFrom', MONTHS.map((m, i) => [i + 1, m]), 6); fillSelect('#fTo', MONTHS.map((m, i) => [i + 1, m]), 7);
+fillSelect('#fScene', Object.keys(SCENES).map((k) => [k, k]), 'mandala'); fillSelect('#fSound', Object.keys(SOUNDS).map((k) => [k, k]), 'tarnetar');
+const DEFPAL = { kites: 0, colour: 1, umbrellas: 2, boats: 3, pyramid: 4, mandala: 5, garba: 6, chariot: 7 };
+function ytId(v) { v = (v || '').trim(); const m = v.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/) || v.match(/^([\w-]{11})$/); return m ? m[1] : ''; }
+function draft() {
+  const slug = ($('#fName').value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '') || 'festival').slice(0, 20);
+  const sc = $('#fScene').value;
+  return { id: slug + 'x', name: $('#fName').value.trim() || 'Untitled festival', place: $('#fPlace').value.trim(), state: $('#fState').value.trim(), months: [+$('#fFrom').value, +$('#fTo').value],
+    when: $('#fWhen').value.trim(), weird: $('#fWeird').value.trim(), hear: $('#fHear').value.trim(), see: $('#fSee').value.trim(),
+    pal: JSON.parse(JSON.stringify(FESTIVALS[DEFPAL[sc] != null ? DEFPAL[sc] : 0].pal)), scene: sc, sound: $('#fSound').value, music: ytId($('#fMusic').value) ? [{ yt: ytId($('#fMusic').value), title: $('#fName').value.trim() }] : [] };
+}
+function snippet(d) {
+  const q = (s) => JSON.stringify(s);
+  return '{ id: ' + q(d.id.replace(/x$/, '')) + ', name: ' + q(d.name) + ', place: ' + q(d.place) + ', state: ' + q(d.state) + ', months: [' + d.months.join(', ') + '],\n' +
+    '  when: ' + q(d.when) + ',\n  weird: ' + q(d.weird) + ',\n  hear: ' + q(d.hear) + ', see: ' + q(d.see) + ',\n' +
+    '  pal: { bg: [' + d.pal.bg.map(q).join(', ') + '], c: [' + d.pal.c.map(q).join(', ') + '] }, scene: ' + q(d.scene) + ', sound: ' + q(d.sound) + (d.music.length ? ',\n  music: [{ yt: ' + q(d.music[0].yt) + ', title: ' + q(d.music[0].title) + ' }]' : '') + ' },';
+}
+const refreshCode = () => { $('#code').textContent = snippet(draft()); };
+$('#form').addEventListener('input', refreshCode);
+$('#form').addEventListener('submit', (e) => { e.preventDefault(); const d = draft(); d.id = d.id + items.length; const it = addFestival(d, true); setTimeout(() => it.root.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), 60); });
+$('#copy').addEventListener('click', () => {
+  const t = $('#code').textContent, b = $('#copy');
+  const done = () => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy code'; }, 1600); };
+  const fb = () => { const r = document.createRange(); r.selectNodeContents($('#code')); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Selected, press copy'; };
+  try { navigator.clipboard.writeText(t).then(done, fb); } catch (e) { fb(); }
+});
+
+/* start */
+buildHead(); FESTIVALS.slice().sort((a, b) => a.months[0] - b.months[0] || a.months[1] - b.months[1]).forEach((f) => addFestival(f, false));
+refreshCode();
+window.__FEST = { MU, playMusic, stopMusic, items, SCENES, SOUNDS, FESTIVALS, AE, playSound, stopSound };
+if (reduce) items.forEach((it) => paint(it, it.t, 0)); else requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
